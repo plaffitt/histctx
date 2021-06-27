@@ -9,12 +9,25 @@ function resolve_path {
 	fi
 }
 
+function get_current_context {
+	current_context=$(cat $HOME/.histctx)
+	if [ "$current_context" != "$HOME/.bash_history" ]; then
+		echo $current_context
+	fi
+}
+
 function cmd_list {
 	echo -e "LINES\tLAST ACCESS      \tNAME"
 	contexts=$(find "$HOME/.bash_history.d" -type f)
 	tmp_contexts=$(find "/tmp/histctx" -type f)
 	for context in $contexts $tmp_contexts; do
-		printf "%5d\t%s\t%s\n" $(wc -l $context | awk '{ print $1}') "$(stat -c %y $context | cut -c1-19)" $(basename $context)
+		local context_name=$(basename $context)
+		if [ "$context_name" == "$HISTORY_CONTEXT" ]; then
+			echo -n '*'
+		else
+			echo -n ' '
+		fi
+		printf "%5d\t%s\t%s\n" $(wc -l $context | awk '{ print $1}') "$(stat -c %y $context | cut -c1-19)" "$context_name"
 	done
 }
 
@@ -50,17 +63,20 @@ EXAMPLES
 
 function set_context {
 	local context="$1"
-	if [[ "$context" == "" ]]; then
-		local HISTFILE="$HOME/.bash_history"
-		local HISTORY_SESSION=""
+	if [[ "$context" == "$HOME/.bash_history.d/" ]]; then
+		local histfile="$HOME/.bash_history"
+		local context_name=""
 	else
-		local HISTFILE="$context"
-		local HISTORY_SESSION="$(basename $context)"
+		local histfile="$context"
+		local context_name="$(basename $context)"
 	fi
 
-	touch "$HISTFILE"
-	HISTFILE="$HISTFILE" HISTORY_SESSION="$HISTORY_SESSION" bash
+	touch "$histfile"
+	echo $histfile >~/.histctx
+	HISTFILE="$histfile" HISTORY_CONTEXT="$context_name" bash
 }
+
+touch .histctx
 
 command="$1"
 case "$command" in
@@ -81,7 +97,14 @@ rename | mv)
 delete | del | remove | rm)
 	cmd_delete ${@:2}
 	;;
-help | '')
-	show_usage
+'')
+	current_context=$(get_current_context)
+	if [ "$current_context" != "" ] && [ "$HISTORY_CONTEXT" != "$(basename "$current_context")" ]; then
+		set_context "$current_context"
+	fi
+	;;
+*)
+	echo "histctx: $command command not found" 1>&2
+	exit 1
 	;;
 esac
