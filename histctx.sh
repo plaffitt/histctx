@@ -1,5 +1,14 @@
 #!/bin/bash
 
+function resolve_path {
+	local context="$1"
+	if [ -f /tmp/histctx/$context ]; then
+		echo "/tmp/histctx/$context"
+	else
+		echo "$HOME/.bash_history.d/$context"
+	fi
+}
+
 function cmd_list {
 	echo -e "LINES\tLAST ACCESS      \tNAME"
 	contexts=$(find "$HOME/.bash_history.d" -type f)
@@ -12,16 +21,12 @@ function cmd_list {
 function cmd_rename {
 	local original_name="$1"
 	local new_name="$2"
-	mv -i "$HOME/.bash_history.d/$original_name" "$HOME/.bash_history.d/$new_name"
+	mv -i $(resolve_path $original_name) "$HOME/.bash_history.d/$new_name"
 }
 
 function cmd_delete {
 	local context="$1"
-	if [ -f /tmp/histctx/$context ]; then
-		rm -vi "/tmp/histctx/$context"
-	else
-		rm -vi "$HOME/.bash_history.d/$context"
-	fi
+	rm -vi $(resolve_path $context)
 }
 
 function show_usage {
@@ -73,7 +78,7 @@ list | ls)
 rename | mv)
 	cmd_rename ${@:2}
 	;;
-delete | del | remove | rm )
+delete | del | remove | rm)
 	cmd_delete ${@:2}
 	;;
 help | '')
