@@ -2,9 +2,10 @@
 
 function cmd_list {
 	echo -e "LINES\tLAST ACCESS      \tNAME"
-	for context in $(find "$HOME/.bash_history.d" -type f -exec basename {} \;); do
-		local history="$HOME/.bash_history.d/$context"
-		printf "%5d\t%s\t%s\n" $(wc -l $history | awk '{ print $1}') "$(stat -c %y $history | cut -c1-19)" $context
+	contexts=$(find "$HOME/.bash_history.d" -type f)
+	tmp_contexts=$(find "/tmp/histctx" -type f)
+	for context in $contexts $tmp_contexts; do
+		printf "%5d\t%s\t%s\n" $(wc -l $context | awk '{ print $1}') "$(stat -c %y $context | cut -c1-19)" $(basename $context)
 	done
 }
 
@@ -16,20 +17,27 @@ function cmd_rename {
 
 function cmd_delete {
 	local context="$1"
-	rm -vi "$HOME/.bash_history.d/$context"
+	if [ -f /tmp/histctx/$context ]; then
+		rm -vi "/tmp/histctx/$context"
+	else
+		rm -vi "$HOME/.bash_history.d/$context"
+	fi
 }
 
 function show_usage {
 	echo "usage: histctx <command|context> [<args>]
 
 COMMANDS
-  list       list existing history contexts
-  rename     rename an history context
-  delete     delete an history context
-  help       show this help message
+  set                      set a context, create it if it doesn't exists yet
+  temporary|tmp            create a temporary context and set it as current
+  list|ls                  list existing history contexts
+  rename|mv                rename an history context
+  delete|del|remove|rm     delete an history context
+  help                     show this help message
 
 EXAMPLES
-  $ histctx new-context
+  $ histctx set new-context
+  $ histctx tmp
   $ histctx list
   $ histctx rename new-context my-context
   $ histctx delete my-context"
@@ -38,12 +46,11 @@ EXAMPLES
 function set_context {
 	local context="$1"
 	if [[ "$context" == "" ]]; then
-		HISTFILE="$HOME/.bash_history"
-		HISTORY_SESSION=""
+		local HISTFILE="$HOME/.bash_history"
+		local HISTORY_SESSION=""
 	else
-		mkdir -p "$HOME/.bash_history.d"
-		HISTFILE="$HOME/.bash_history.d/$context"
-		HISTORY_SESSION="$context"
+		local HISTFILE="$context"
+		local HISTORY_SESSION="$(basename $context)"
 	fi
 
 	touch "$HISTFILE"
@@ -52,22 +59,24 @@ function set_context {
 
 command="$1"
 case "$command" in
-list)
+set)
+	mkdir -p "$HOME/.bash_history.d"
+	set_context "$HOME/.bash_history.d/$2"
+	;;
+temporary | tmp)
+	mkdir -p /tmp/histctx
+	set_context $(mktemp -p /tmp/histctx)
+	;;
+list | ls)
 	cmd_list
 	;;
-rename)
+rename | mv)
 	cmd_rename ${@:2}
 	;;
-delete)
+delete | del | remove | rm )
 	cmd_delete ${@:2}
 	;;
-help)
+help | '')
 	show_usage
-	;;
-'')
-	show_usage
-	;;
-*)
-	set_context ${@:1}
 	;;
 esac
