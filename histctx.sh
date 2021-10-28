@@ -72,11 +72,12 @@ function set_context {
 	fi
 
 	touch "$histfile"
-	echo $histfile >~/.histctx
+	echo $histfile > ~/.histctx
 	HISTFILE="$histfile" HISTORY_CONTEXT="$context_name" bash
 }
 
-touch .histctx
+touch ~/.histctx
+mkdir -p /tmp/histctx
 
 command="$1"
 case "$command" in
@@ -85,7 +86,6 @@ set)
 	set_context "$HOME/.bash_history.d/$2"
 	;;
 temporary | tmp)
-	mkdir -p /tmp/histctx
 	set_context $(mktemp -p /tmp/histctx)
 	;;
 list | ls)
