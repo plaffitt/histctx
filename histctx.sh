@@ -48,7 +48,7 @@ function show_usage {
 	echo "usage: histctx <command|context> [<args>]
 
 COMMANDS
-  set                      set a context, create it if it doesn't exists yet
+  set                      set a context, create it if it doesn't exists yet. \"$0 set .\" expands \".\" as the current folder name
   temporary|tmp            create a temporary context and set it as current
   list|ls                  list existing history contexts
   rename|mv                rename an history context
@@ -84,8 +84,12 @@ mkdir -p /tmp/histctx
 command="$1"
 case "$command" in
 set)
+	name="$2"
+	if [[ "$name" == "." ]]; then
+		name=$(basename "$(pwd)")
+	fi
 	mkdir -p "$HOME/.bash_history.d"
-	set_context "$HOME/.bash_history.d/$2"
+	set_context "$HOME/.bash_history.d/$name"
 	;;
 temporary | tmp)
 	set_context "$(mktemp -p /tmp/histctx)"
