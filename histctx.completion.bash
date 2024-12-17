@@ -24,6 +24,10 @@ function _histctx_completions {
 				set|rename|mv|delete|del|remove|rm|show|cat)
 					mapfile -t COMPREPLY < <(compgen -W "${contexts[*]}" -- "$cur")
 					;;
+				list|ls)
+					mapfile -t flags < <(sort --help | grep -oE '(-{1,2}[a-zA-Z0-9-]+)' | sort)
+					mapfile -t COMPREPLY < <(compgen -W "${flags[*]}" -- "$cur")
+					;;
 				*)
 					COMPREPLY=()
 					;;
