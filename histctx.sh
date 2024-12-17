@@ -87,9 +87,6 @@ set)
 	mkdir -p "$HOME/.bash_history.d"
 	set_context "$HOME/.bash_history.d/$2"
 	;;
-open)
-	set_context "$2"
-	;;
 temporary | tmp)
 	set_context "$(mktemp -p /tmp/histctx)"
 	;;
