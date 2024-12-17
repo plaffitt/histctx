@@ -140,7 +140,7 @@ show | cat)
 	cmd_show "${@:2}"
 	;;
 rename | mv)
-	cmd_rename "${@:2}"
+	cmd_rename "$2" "$3"
 	;;
 delete | del | remove | rm)
 	cmd_delete "${@:2}"
