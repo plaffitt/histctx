@@ -2,7 +2,7 @@
 
 function resolve_path {
 	local context="$1"
-	if [ -f /tmp/histctx/$context ]; then
+	if [ -f "/tmp/histctx/$context" ]; then
 		echo "/tmp/histctx/$context"
 	else
 		echo "$HOME/.bash_history.d/$context"
@@ -10,9 +10,9 @@ function resolve_path {
 }
 
 function get_current_context {
-	current_context=$(cat $HOME/.histctx)
+	current_context=$(cat "$HOME/.histctx")
 	if [ "$current_context" != "$HOME/.bash_history" ]; then
-		echo $current_context
+		echo "$current_context"
 	fi
 }
 
@@ -27,19 +27,21 @@ function cmd_list {
 		else
 			echo -n ' '
 		fi
-		printf "%5d\t%s\t%s\n" $(wc -l $context | awk '{ print $1}') "$(stat -c %y $context | cut -c1-19)" "$context_name"
+		local last_access=$(stat -c %y "$context" | cut -c1-19)
+		local lines=$(wc -l $context | awk '{ print $1}')
+		printf "%5d\t%s\t%s\n" "$lines" "$last_access" "$context_name"
 	done
 }
 
 function cmd_rename {
-	local original_name="$1"
+	local context_path=$(resolve_path $1)
 	local new_name="$2"
-	mv -i $(resolve_path $original_name) "$HOME/.bash_history.d/$new_name"
+	mv -i "$context_path" "$HOME/.bash_history.d/$new_name"
 }
 
 function cmd_delete {
-	local context="$1"
-	rm -vi $(resolve_path $context)
+	local context_path=$(resolve_path $1)
+	rm -vi "$context_path"
 }
 
 function show_usage {
@@ -72,7 +74,7 @@ function set_context {
 	fi
 
 	touch "$histfile"
-	echo $histfile > ~/.histctx
+	echo "$histfile" > ~/.histctx
 	HISTFILE="$histfile" HISTORY_CONTEXT="$context_name" bash
 }
 
@@ -85,17 +87,23 @@ set)
 	mkdir -p "$HOME/.bash_history.d"
 	set_context "$HOME/.bash_history.d/$2"
 	;;
+open)
+	set_context "$2"
+	;;
 temporary | tmp)
-	set_context $(mktemp -p /tmp/histctx)
+	set_context "$(mktemp -p /tmp/histctx)"
 	;;
 list | ls)
 	cmd_list
 	;;
 rename | mv)
-	cmd_rename ${@:2}
+	cmd_rename "${@:2}"
 	;;
 delete | del | remove | rm)
-	cmd_delete ${@:2}
+	cmd_delete "${@:2}"
+	;;
+help)
+	show_usage
 	;;
 '')
 	current_context=$(get_current_context)
@@ -105,6 +113,7 @@ delete | del | remove | rm)
 	;;
 *)
 	echo "histctx: $command command not found" 1>&2
+	show_usage
 	exit 1
 	;;
 esac
