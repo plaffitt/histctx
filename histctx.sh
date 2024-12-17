@@ -19,8 +19,7 @@ function get_current_context {
 function cmd_list {
 	echo -e "LINES\tLAST ACCESS      \tNAME"
 	contexts=$(find "$HOME/.bash_history.d" -type f)
-	tmp_contexts=$(find "/tmp/histctx" -type f)
-	for context in $contexts $tmp_contexts; do
+	for context in $contexts; do
 		local context_name=$(basename $context)
 		if [ "$context_name" == "$HISTORY_CONTEXT" ]; then
 			echo -n '*'
@@ -49,7 +48,7 @@ function show_usage {
 
 COMMANDS
   set                      set a context, create it if it doesn't exists yet. \"$0 set .\" expands \".\" as the current folder name
-  temporary|tmp            create a temporary context and set it as current
+  temporary|tmp            create a context in /tmp and set it as current
   list|ls                  list existing history contexts
   rename|mv                rename an history context
   delete|del|remove|rm     delete an history context
@@ -92,7 +91,16 @@ set)
 	set_context "$HOME/.bash_history.d/$name"
 	;;
 temporary | tmp)
-	set_context "$(mktemp -p /tmp/histctx)"
+	set_context /tmp/bash_history.tmp
+	read -rn1 -p "clear this history? (Y/n): " confirmation
+	if [[ "$confirmation" == "" ]]; then
+		confirmation="y"
+	else
+		echo
+	fi
+	if [[ "$confirmation" =~ ^[Yy]$ ]]; then
+		rm /tmp/bash_history.tmp
+	fi
 	;;
 list | ls)
 	cmd_list
