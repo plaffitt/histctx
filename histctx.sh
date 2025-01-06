@@ -87,7 +87,7 @@ EXAMPLES
   $ histctx set new-context
   $ histctx set .
   $ histctx tmp
-	$ histctx list -rk 3 # list sorted by name (third column) in reverse order
+  $ histctx list -rk 3 # list sorted by name (third column) in reverse order
   $ histctx show my-context another-context
   $ histctx rename new-context my-context
   $ histctx delete my-context"
